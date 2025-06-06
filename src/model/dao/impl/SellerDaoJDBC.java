@@ -6,10 +6,7 @@ import model.dao.SellerDao;
 import model.entities.Department;
 import model.entities.Seller;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +22,42 @@ public class SellerDaoJDBC implements SellerDao {
 
     @Override
     public void insert(Seller obj) {
+        PreparedStatement st = null;
 
+        try {
+            st = conn.prepareStatement(
+                    "INSERT INTO seller " +
+                            "(name, email, birth_date, base_salary, department_id) " +
+                            "VALUES " +
+                            "(?, ?, ?, ?, ?) ",
+                    Statement.RETURN_GENERATED_KEYS);
+
+            st.setString(1,obj.getName());
+            st.setString(2, obj.getEmail());
+            st.setDate(3, new java.sql.Date(obj.getBirthDate().getTime()));
+            st.setDouble(4, obj.getBaseSalary());
+            st.setInt(5, obj.getDepartment().getId());
+
+            int rowsAffected = st.executeUpdate();
+
+            if (rowsAffected > 0) {
+                ResultSet rs = st.getGeneratedKeys();
+                if (rs.next()) {
+                    int id = rs.getInt(1);
+                    obj.setId(id);
+                }
+                DB.closeResultSet(rs);
+            }
+            else {
+                throw new DbException("Unexpected error! No rows affected!");
+            }
+        }
+        catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        }
+        finally {
+            DB.closeStatement(st);
+        }
     }
 
     @Override
@@ -60,11 +92,9 @@ public class SellerDaoJDBC implements SellerDao {
             }
 
             return null;
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new DbException(e.getMessage());
-        }
-        finally {
+        } finally {
             DB.closeStatement(st);
             DB.closeResultSet(rs);
         }
@@ -93,8 +123,8 @@ public class SellerDaoJDBC implements SellerDao {
                 department = map.get(rs.getInt("department_id" ));
 
                 if (department == null) {
-                department = instanciateDepartment(rs);
-                map.put(rs.getInt("department_id"), department);
+                    department = instanciateDepartment(rs);
+                    map.put(rs.getInt("department_id" ), department);
                 }
 
                 Seller object = instanciateSeller(rs, department);
@@ -102,11 +132,9 @@ public class SellerDaoJDBC implements SellerDao {
             }
 
             return list;
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new DbException(e.getMessage());
-        }
-        finally {
+        } finally {
             DB.closeStatement(st);
             DB.closeResultSet(rs);
         }
@@ -114,11 +142,11 @@ public class SellerDaoJDBC implements SellerDao {
 
     private Seller instanciateSeller(ResultSet rs, Department department) throws SQLException {
         Seller object = new Seller();
-        object.setId(rs.getInt("id"));
-        object.setName(rs.getString("name"));
-        object.setEmail(rs.getString("email"));
-        object.setBaseSalary(rs.getDouble("base_salary"));
-        object.setBirthDate(rs.getDate("birth_date"));
+        object.setId(rs.getInt("id" ));
+        object.setName(rs.getString("name" ));
+        object.setEmail(rs.getString("email" ));
+        object.setBaseSalary(rs.getDouble("base_salary" ));
+        object.setBirthDate(rs.getDate("birth_date" ));
         object.setDepartment(department);
 
         return object;
@@ -126,8 +154,8 @@ public class SellerDaoJDBC implements SellerDao {
 
     private Department instanciateDepartment(ResultSet rs) throws SQLException {
         Department department = new Department();
-        department.setId(rs.getInt("department_id"));
-        department.setName(rs.getString("depname"));
+        department.setId(rs.getInt("department_id" ));
+        department.setName(rs.getString("depname" ));
 
         return department;
     }
@@ -150,11 +178,11 @@ public class SellerDaoJDBC implements SellerDao {
 
             while (rs.next()) {
 
-               Department department = map.get(rs.getInt("department_id" ));
+                Department department = map.get(rs.getInt("department_id" ));
 
                 if (department == null) {
                     department = instanciateDepartment(rs);
-                    map.put(rs.getInt("department_id"), department);
+                    map.put(rs.getInt("department_id" ), department);
                 }
 
                 Seller object = instanciateSeller(rs, department);
@@ -162,11 +190,9 @@ public class SellerDaoJDBC implements SellerDao {
             }
 
             return list;
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new DbException(e.getMessage());
-        }
-        finally {
+        } finally {
             DB.closeStatement(st);
             DB.closeResultSet(rs);
         }
